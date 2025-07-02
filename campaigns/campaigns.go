@@ -1,9 +1,13 @@
 package campaigns
 
 import (
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"TargetingEngineGG/app"
 	"TargetingEngineGG/database"
 	"TargetingEngineGG/targeting"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,15 +20,20 @@ type Campaign struct {
 	Rules    []targeting.Rule
 }
 
+type MatchedCampaigns struct {
+	CampaignID string `json:"cid"`
+	ImageURL   string `json:"img"`
+	CTA        string `json:"cta"`
+}
+
 func GetCampaigns(c *gin.Context) {
+	start := time.Now()
 
-	//mysql
-
-	app := c.Query("app")
+	appName := c.Query("app")
 	country := c.Query("country")
 	os := c.Query("os")
 
-	if app == "" || country == "" || os == "" {
+	if appName == "" || country == "" || os == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing query parameters"})
 		return
 	}
@@ -61,21 +70,16 @@ func GetCampaigns(c *gin.Context) {
 
 	}
 
-	var matched []gin.H
+	var matched []MatchedCampaigns
 
 	for _, camp := range campaigns {
-		if targeting.MatchCampaigns(camp.Rules, app, country, os) {
-			matched = append(matched, gin.H{
-				"cid": camp.ID,
-				"img": camp.ImageURL,
-				"cta": camp.CTA,
+		if targeting.MatchCampaigns(camp.Rules, appName, country, os) {
+			matched = append(matched, MatchedCampaigns{
+				CampaignID: camp.ID,
+				ImageURL:   camp.ImageURL,
+				CTA:        camp.CTA,
 			})
 		}
-	}
-
-	if len(matched) == 0 {
-		c.Status(http.StatusNoContent)
-		return
 	}
 
 	// response := map[string]interface{}{
@@ -84,6 +88,23 @@ func GetCampaigns(c *gin.Context) {
 	// 	"os":      os,
 	// }
 
+	access := app.AccessLog{
+		Timestamp:  time.Now().UTC().Format(time.RFC3339),
+		StatusCode: http.StatusOK,
+		Error:      "",
+		Request:    c.Request.URL.RawQuery,
+		Response:   matched,
+		DurationMS: time.Since(start).Milliseconds(),
+	}
+	accessJSON, _ := json.Marshal(access)
+	app.Info.Println(string(accessJSON))
+
+	app.RequestsTotal.WithLabelValues("/v1/delivery", "GET", "200").Inc()
+
+	if len(matched) == 0 {
+		c.Status(http.StatusNoContent)
+		return
+	}
 	c.JSON(http.StatusOK, matched)
 
 }
