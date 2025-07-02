@@ -8,3 +8,10 @@ Clean coding principles like SOLID were written by uncle Bob. And traditionally 
 
 Unlike java, Go is a statically typed language designed with concurrency in mind. 
 It does not have classes or classical inheritance, it provides OOP like support through structs, methods, and interfaces. Go favors composition over inheritance and organizes code around packages and functions.
+
+
+DB setup
+1. Start mysql
+2. creat DB and tables: 
+```bash 
+mysql -u root -p < schema.sql

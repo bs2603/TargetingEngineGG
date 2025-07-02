@@ -2,7 +2,22 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
 )
+
+type Campaign struct {
+	ID       string
+	ImageURL string
+	CTA      string
+	State    string
+	Rules    []Rule
+}
+
+type Rule struct {
+	Dimension string
+	Type      string
+	Value     string
+}
 
 // step 1 register v1/delivery
 func main() {
