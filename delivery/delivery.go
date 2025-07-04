@@ -1,4 +1,4 @@
-package campaigns
+package delivery
 
 import (
 	"encoding/json"
@@ -6,27 +6,14 @@ import (
 	"time"
 
 	"TargetingEngineGG/app"
+	"TargetingEngineGG/campaign"
 	"TargetingEngineGG/database"
 	"TargetingEngineGG/targeting"
 
 	"github.com/gin-gonic/gin"
 )
 
-type Campaign struct {
-	ID       string
-	ImageURL string
-	CTA      string
-	State    string
-	Rules    []targeting.Rule
-}
-
-type MatchedCampaigns struct {
-	CampaignID string `json:"cid"`
-	ImageURL   string `json:"img"`
-	CTA        string `json:"cta"`
-}
-
-func GetCampaigns(c *gin.Context) {
+func DeliverCampaigns(c *gin.Context) {
 	start := time.Now()
 
 	appName := c.Query("app")
@@ -45,10 +32,10 @@ func GetCampaigns(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var campaigns []Campaign
+	var campaigns []campaign.Campaign
 
 	for rows.Next() {
-		var camp Campaign
+		var camp campaign.Campaign
 		if err := rows.Scan(&camp.ID, &camp.ImageURL, &camp.CTA); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error scanning DB": err})
 		}
@@ -70,11 +57,11 @@ func GetCampaigns(c *gin.Context) {
 
 	}
 
-	var matched []MatchedCampaigns
+	var matched []campaign.MatchedCampaigns
 
 	for _, camp := range campaigns {
 		if targeting.MatchCampaigns(camp.Rules, appName, country, os) {
-			matched = append(matched, MatchedCampaigns{
+			matched = append(matched, campaign.MatchedCampaigns{
 				CampaignID: camp.ID,
 				ImageURL:   camp.ImageURL,
 				CTA:        camp.CTA,
