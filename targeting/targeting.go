@@ -9,20 +9,22 @@ type Rule struct {
 }
 
 func MatchCampaigns(rules []Rule, app, country, os string) bool {
-	includeApp := true
-	includeCountry := true
-	includeOS := true
+	var (
+		hasIncludeApp     bool
+		hasIncludeCountry bool
+		hasIncludeOS      bool
 
-	hasIncludeApp := false
-	hasIncludeCountry := false
-	hasIncludeOS := false
+		includeApp     bool
+		includeCountry bool
+		includeOS      bool
+	)
 
 	for _, r := range rules {
 		switch r.Dimension {
 		case "APP":
 			if r.Type == "INCLUDE" {
 				hasIncludeApp = true
-				if r.Value == app {
+				if strings.EqualFold(r.Value, app) {
 					includeApp = true
 				}
 			}
@@ -32,18 +34,17 @@ func MatchCampaigns(rules []Rule, app, country, os string) bool {
 		case "COUNTRY":
 			if r.Type == "INCLUDE" {
 				hasIncludeCountry = true
-				if r.Value == country {
+				if strings.EqualFold(r.Value, country) {
 					includeCountry = true
 				}
 			}
 			if r.Type == "EXCLUDE" && strings.EqualFold(r.Value, country) {
 				return false
 			}
-
 		case "OS":
 			if r.Type == "INCLUDE" {
 				hasIncludeOS = true
-				if r.Value == os {
+				if strings.EqualFold(r.Value, os) {
 					includeOS = true
 				}
 			}
