@@ -9,14 +9,13 @@ type Rule struct {
 }
 
 func MatchCampaigns(rules []Rule, ctx map[string]string) bool {
-	// Track inclusion logic for each dimension
 	includeCheck := make(map[string]bool)
 	hasInclude := make(map[string]bool)
 
 	for _, r := range rules {
 		value, ok := ctx[strings.ToLower(r.Dimension)]
 		if !ok {
-			value = "" // in case context is missing, treat as empty
+			value = ""
 		}
 
 		switch r.Type {
@@ -27,16 +26,16 @@ func MatchCampaigns(rules []Rule, ctx map[string]string) bool {
 			}
 		case "EXCLUDE":
 			if strings.EqualFold(r.Value, value) {
-				return false // excluded, reject immediately
+				return false
 			}
 		}
 	}
 
 	for dimension := range hasInclude {
 		if !includeCheck[dimension] {
-			return false // dimension had INCLUDE but no match
+			return false
 		}
 	}
 
-	return true // passed all filters
+	return true
 }

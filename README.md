@@ -1,20 +1,6 @@
 # TargetingEngineGG
 
 This repository implements a targeting engine that routes campaigns to the right requests, with a focus on **extensible, maintainable, and reusable code**.
-
-Let's LLD right into it. 🙂
-
----
-
-## Clean Coding and LLD
-
-Clean coding principles like **SOLID** were popularized by *Uncle Bob*. Traditionally, Low-Level Design (LLD) examples have been illustrated in Java, an OOP-focused language with extensive support for inheritance and related constructs.
-
-Unlike Java, **Go** is a statically typed language designed with **concurrency** in mind:
-- It does not have classes or classical inheritance.
-- It provides OOP-like features via **structs, methods, and interfaces**.
-- Go favors **composition over inheritance**, organizing code around packages and functions.
-
 ---
 
 ## Database Setup
@@ -77,23 +63,23 @@ Targeting logic and dimension handling are decoupled, so you can add new dimensi
 
 2. But Since I am trying to make a production ready service, such a service can be deployed on multiple pods, which can be sharing cache. Its better to implement redis, which is what I will do :)
 
-###Latency:
+### Latency:
 Redis fetches are ~0.2ms (microseconds), much faster than MySQL but a bit slower than in-process cache.
-###Consistency:
+### Consistency:
 Redis is always in sync every 30s.
-###Scalability:
+### Scalability:
 Multiple Go processes can all use the same Redis.
-###Persistence:
+### Persistence:
 Redis can persist to disk if you enable RDB/AOF.
 
-###On startup:
+### On startup:
 Loads all active campaigns and their rules from MySQL.
 Store them in Redis as JSON blobs.
 
-###Every N seconds (e.g., 30s):
+### Every N seconds (e.g., 30s):
 Refresh all campaigns in Redis, so the cache stays up to date with MySQL changes (new campaigns, new targeting rules, status changes).
 
-###On each request:
+### On each request:
 1. Get all campaigns from Redis (or fetch per campaign if you prefer).
 2. Match campaigns in memory.
 3. Return results.
