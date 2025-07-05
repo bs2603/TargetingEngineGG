@@ -62,25 +62,3 @@ Targeting logic and dimension handling are decoupled, so you can add new dimensi
 1. In a service like this, if there are ~1000s of campaigns, thats KBs of data. And with 100000 of requests, thats still MBs of data. Adding an In-memory cache using the service's memory would be the fastest way to cache, as it will avoid the network hop required to query redis or anything.
 
 2. But Since I am trying to make a production ready service, such a service can be deployed on multiple pods, which can be sharing cache. Its better to implement redis, which is what I will do :)
-
-### Latency:
-Redis fetches are ~0.2ms (microseconds), much faster than MySQL but a bit slower than in-process cache.
-### Consistency:
-Redis is always in sync every 30s.
-### Scalability:
-Multiple Go processes can all use the same Redis.
-### Persistence:
-Redis can persist to disk if you enable RDB/AOF.
-
-### On startup:
-Loads all active campaigns and their rules from MySQL.
-Store them in Redis as JSON blobs.
-
-### Every N seconds (e.g., 30s):
-Refresh all campaigns in Redis, so the cache stays up to date with MySQL changes (new campaigns, new targeting rules, status changes).
-
-### On each request:
-1. Get all campaigns from Redis (or fetch per campaign if you prefer).
-2. Match campaigns in memory.
-3. Return results.
-4. Cache fallback: If Redis is unavailable, optionally fall back to MySQL.
