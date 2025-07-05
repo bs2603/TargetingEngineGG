@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"TargetingEngineGG/app"
+	"TargetingEngineGG/cache"
 	"TargetingEngineGG/campaign"
 	"TargetingEngineGG/database"
 	"TargetingEngineGG/targeting"
@@ -16,8 +17,6 @@ import (
 func DeliverCampaigns(c *gin.Context) {
 	start := time.Now()
 	ctx := make(map[string]string)
-	// requiredDimensions := []string{"app", "country", "os", "devicetype"}
-	// optionalDimensions := []string{"subscriptiontier"}
 	missing := []string{}
 
 	for _, dim := range RequiredDimensions {
@@ -73,7 +72,16 @@ func DeliverCampaigns(c *gin.Context) {
 
 	var matched []campaign.MatchedCampaigns
 
-	for _, camp := range campaigns {
+	keys, _ := cache.RDB.Keys(cache.Ctx, "campaign:*").Result()
+
+	for _, key := range keys {
+		data, err := cache.RDB.Get(cache.Ctx, key).Result()
+		if err != nil {
+			continue
+		}
+
+		var camp campaign.Campaign
+		json.Unmarshal([]byte(data), &camp)
 
 		if targeting.MatchCampaigns(camp.Rules, ctx) {
 			matched = append(matched, campaign.MatchedCampaigns{

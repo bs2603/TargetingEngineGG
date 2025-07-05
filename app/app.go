@@ -1,15 +1,19 @@
 package app
 
 import (
+	"TargetingEngineGG/cache"
+	"TargetingEngineGG/database"
 	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 func Init() {
+	cache.InitRedis()
 	logDir := "logs"
 	os.MkdirAll(logDir, os.ModePerm)
 
@@ -28,4 +32,12 @@ func Init() {
 
 	prometheus.MustRegister(RequestsTotal)
 	prometheus.MustRegister(RequestLatency)
+
+	go func() {
+		for {
+			cache.RefreshCampaigns(database.DB)
+			time.Sleep(3600 * time.Second)
+		}
+	}()
+
 }
