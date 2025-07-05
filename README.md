@@ -79,36 +79,22 @@ Targeting logic and dimension handling are decoupled, so you can add new dimensi
 
 ###Latency:
 Redis fetches are ~0.2ms (microseconds), much faster than MySQL but a bit slower than in-process cache.
-
 ###Consistency:
 Redis is always in sync every 30s.
-
 ###Scalability:
 Multiple Go processes can all use the same Redis.
-
 ###Persistence:
 Redis can persist to disk if you enable RDB/AOF.
 
-On startup:
+###On startup:
 Loads all active campaigns and their rules from MySQL.
 Store them in Redis as JSON blobs.
 
-Every N seconds (e.g., 30s):
+###Every N seconds (e.g., 30s):
 Refresh all campaigns in Redis, so the cache stays up to date with MySQL changes (new campaigns, new targeting rules, status changes).
 
-On each request:
-
-Get all campaigns from Redis (or fetch per campaign if you prefer).
-
-Match campaigns in memory.
-
-Return results.
-
-Cache fallback:
-
-If Redis is unavailable, optionally fall back to MySQL.
-
-2. add code for this -
-Fallback to MySQL
-If Redis returns an error or no keys, you can load from MySQL as backup.
- This is useful if Redis is down.
+###On each request:
+1. Get all campaigns from Redis (or fetch per campaign if you prefer).
+2. Match campaigns in memory.
+3. Return results.
+4. Cache fallback: If Redis is unavailable, optionally fall back to MySQL.

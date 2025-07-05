@@ -9,6 +9,7 @@ import (
 	"TargetingEngineGG/app"
 	"TargetingEngineGG/cache"
 	"TargetingEngineGG/campaign"
+	"TargetingEngineGG/database"
 	"TargetingEngineGG/targeting"
 
 	"github.com/gin-gonic/gin"
@@ -39,24 +40,56 @@ func DeliverCampaigns(c *gin.Context) {
 	}
 
 	var matched []campaign.MatchedCampaigns
+	var campaigns []campaign.Campaign
 
 	keys, err := cache.RDB.Keys(cache.Ctx, "campaign:*").Result()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Redis keys error"})
-		return
+	if err == nil && len(keys) > 0 {
+		for _, key := range keys {
+			data, err := cache.RDB.Get(cache.Ctx, key).Result()
+			if err != nil {
+				continue
+			}
+			var camp campaign.Campaign
+			if err := json.Unmarshal([]byte(data), &camp); err != nil {
+				continue
+			}
+			campaigns = append(campaigns, camp)
+		}
+	} else {
+		rows, err := database.DB.Query("SELECT id,image_url,cta FROM campaigns WHERE state='ACTIVE'")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error: " + err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var camp campaign.Campaign
+			if err := rows.Scan(&camp.ID, &camp.ImageURL, &camp.CTA); err != nil {
+				continue
+			}
+
+			ruleRows, err := database.DB.Query("SELECT dimension,type,value FROM targeting_rules WHERE campaign_id = ?", camp.ID)
+			if err != nil {
+				continue
+			}
+			for ruleRows.Next() {
+				var r targeting.Rule
+				if err := ruleRows.Scan(&r.Dimension, &r.Type, &r.Value); err != nil {
+					continue
+				}
+				camp.Rules = append(camp.Rules, r)
+			}
+			ruleRows.Close()
+
+			campaigns = append(campaigns, camp)
+
+			data, _ := json.Marshal(camp)
+			cache.RDB.Set(cache.Ctx, "campaign:"+camp.ID, data, time.Hour)
+		}
 	}
 
-	for _, key := range keys {
-		data, err := cache.RDB.Get(cache.Ctx, key).Result()
-		if err != nil {
-			continue
-		}
-
-		var camp campaign.Campaign
-		if err := json.Unmarshal([]byte(data), &camp); err != nil {
-			continue
-		}
-
+	for _, camp := range campaigns {
 		if targeting.MatchCampaigns(camp.Rules, ctx) {
 			matched = append(matched, campaign.MatchedCampaigns{
 				CampaignID: camp.ID,
