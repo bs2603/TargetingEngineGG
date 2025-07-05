@@ -15,13 +15,27 @@ import (
 
 func DeliverCampaigns(c *gin.Context) {
 	start := time.Now()
+	ctx := make(map[string]string)
+	// requiredDimensions := []string{"app", "country", "os", "devicetype"}
+	// optionalDimensions := []string{"subscriptiontier"}
+	missing := []string{}
 
-	appName := c.Query("app")
-	country := c.Query("country")
-	os := c.Query("os")
+	for _, dim := range RequiredDimensions {
+		val := c.Query(dim)
+		if val == "" {
+			missing = append(missing, dim)
+		}
+		ctx[dim] = val
+	}
+	for _, dim := range OptionalDimensions {
+		val := c.Query(dim)
+		if val != "" {
+			ctx[dim] = val
+		}
+	}
 
-	if appName == "" || country == "" || os == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing query parameters"})
+	if len(missing) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error : Missing query parameters": missing})
 		return
 	}
 
@@ -60,7 +74,8 @@ func DeliverCampaigns(c *gin.Context) {
 	var matched []campaign.MatchedCampaigns
 
 	for _, camp := range campaigns {
-		if targeting.MatchCampaigns(camp.Rules, appName, country, os) {
+
+		if targeting.MatchCampaigns(camp.Rules, ctx) {
 			matched = append(matched, campaign.MatchedCampaigns{
 				CampaignID: camp.ID,
 				ImageURL:   camp.ImageURL,
@@ -68,13 +83,6 @@ func DeliverCampaigns(c *gin.Context) {
 			})
 		}
 	}
-
-	// response := map[string]interface{}{
-	// 	"app":     app,
-	// 	"country": country,
-	// 	"os":      os,
-	// }
-
 	access := app.AccessLog{
 		Timestamp:  time.Now().UTC().Format(time.RFC3339),
 		StatusCode: http.StatusOK,

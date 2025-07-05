@@ -8,59 +8,35 @@ type Rule struct {
 	Value     string
 }
 
-func MatchCampaigns(rules []Rule, app, country, os string) bool {
-	var (
-		hasIncludeApp     bool
-		hasIncludeCountry bool
-		hasIncludeOS      bool
-
-		includeApp     bool
-		includeCountry bool
-		includeOS      bool
-	)
+func MatchCampaigns(rules []Rule, ctx map[string]string) bool {
+	// Track inclusion logic for each dimension
+	includeCheck := make(map[string]bool)
+	hasInclude := make(map[string]bool)
 
 	for _, r := range rules {
-		switch r.Dimension {
-		case "APP":
-			if r.Type == "INCLUDE" {
-				hasIncludeApp = true
-				if strings.EqualFold(r.Value, app) {
-					includeApp = true
-				}
+		value, ok := ctx[strings.ToLower(r.Dimension)]
+		if !ok {
+			value = "" // in case context is missing, treat as empty
+		}
+
+		switch r.Type {
+		case "INCLUDE":
+			hasInclude[r.Dimension] = true
+			if strings.EqualFold(r.Value, value) {
+				includeCheck[r.Dimension] = true
 			}
-			if r.Type == "EXCLUDE" && strings.EqualFold(r.Value, app) {
-				return false
-			}
-		case "COUNTRY":
-			if r.Type == "INCLUDE" {
-				hasIncludeCountry = true
-				if strings.EqualFold(r.Value, country) {
-					includeCountry = true
-				}
-			}
-			if r.Type == "EXCLUDE" && strings.EqualFold(r.Value, country) {
-				return false
-			}
-		case "OS":
-			if r.Type == "INCLUDE" {
-				hasIncludeOS = true
-				if strings.EqualFold(r.Value, os) {
-					includeOS = true
-				}
-			}
-			if r.Type == "EXCLUDE" && strings.EqualFold(r.Value, os) {
-				return false
+		case "EXCLUDE":
+			if strings.EqualFold(r.Value, value) {
+				return false // excluded, reject immediately
 			}
 		}
 	}
-	if hasIncludeApp && !includeApp {
-		return false
+
+	for dimension := range hasInclude {
+		if !includeCheck[dimension] {
+			return false // dimension had INCLUDE but no match
+		}
 	}
-	if hasIncludeCountry && !includeCountry {
-		return false
-	}
-	if hasIncludeOS && !includeOS {
-		return false
-	}
-	return true
+
+	return true // passed all filters
 }
