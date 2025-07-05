@@ -2,13 +2,13 @@ package delivery
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"TargetingEngineGG/app"
 	"TargetingEngineGG/cache"
 	"TargetingEngineGG/campaign"
-	"TargetingEngineGG/database"
 	"TargetingEngineGG/targeting"
 
 	"github.com/gin-gonic/gin"
@@ -34,45 +34,17 @@ func DeliverCampaigns(c *gin.Context) {
 	}
 
 	if len(missing) > 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error : Missing query parameters": missing})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Missing query parameters: %v", missing)})
 		return
-	}
-
-	rows, err := database.DB.Query("SELECT id,image_url,cta FROM campaigns WHERE state='ACTIVE'")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err})
-		return
-	}
-	defer rows.Close()
-
-	var campaigns []campaign.Campaign
-
-	for rows.Next() {
-		var camp campaign.Campaign
-		if err := rows.Scan(&camp.ID, &camp.ImageURL, &camp.CTA); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error scanning DB": err})
-		}
-
-		ruleRows, err := database.DB.Query("SELECT dimension,type,value FROM targeting_rules WHERE campaign_id = ?", camp.ID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error querying DB": err})
-			return
-		}
-		for ruleRows.Next() {
-			var r targeting.Rule
-			if err := ruleRows.Scan(&r.Dimension, &r.Type, &r.Value); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"DB scan error": err})
-			}
-			camp.Rules = append(camp.Rules, r)
-		}
-		ruleRows.Close()
-		campaigns = append(campaigns, camp)
-
 	}
 
 	var matched []campaign.MatchedCampaigns
 
-	keys, _ := cache.RDB.Keys(cache.Ctx, "campaign:*").Result()
+	keys, err := cache.RDB.Keys(cache.Ctx, "campaign:*").Result()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Redis keys error"})
+		return
+	}
 
 	for _, key := range keys {
 		data, err := cache.RDB.Get(cache.Ctx, key).Result()
@@ -81,7 +53,9 @@ func DeliverCampaigns(c *gin.Context) {
 		}
 
 		var camp campaign.Campaign
-		json.Unmarshal([]byte(data), &camp)
+		if err := json.Unmarshal([]byte(data), &camp); err != nil {
+			continue
+		}
 
 		if targeting.MatchCampaigns(camp.Rules, ctx) {
 			matched = append(matched, campaign.MatchedCampaigns{
@@ -109,5 +83,4 @@ func DeliverCampaigns(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, matched)
-
 }
