@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"TargetingEngineGG/app"
-	"TargetingEngineGG/cache"
-	"TargetingEngineGG/campaign"
-	"TargetingEngineGG/database"
-	"TargetingEngineGG/targeting"
+	"github.com/bs2603/TargetingEngineGG/app"
+	"github.com/bs2603/TargetingEngineGG/cache"
+	"github.com/bs2603/TargetingEngineGG/campaign"
+	"github.com/bs2603/TargetingEngineGG/database"
+	"github.com/bs2603/TargetingEngineGG/targeting"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,7 +1,7 @@
 package campaign
 
 import (
-	"TargetingEngineGG/targeting"
+	"github.com/bs2603/TargetingEngineGG/targeting"
 )
 
 type Campaign struct {

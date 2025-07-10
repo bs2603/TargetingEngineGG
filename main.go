@@ -1,8 +1,9 @@
 package main
 
 import (
-	"TargetingEngineGG/app"
-	"TargetingEngineGG/delivery"
+	"github.com/bs2603/TargetingEngineGG/delivery"
+
+	"github.com/bs2603/TargetingEngineGG/app"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

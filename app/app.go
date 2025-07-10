@@ -1,12 +1,13 @@
 package app
 
 import (
-	"TargetingEngineGG/cache"
-	"TargetingEngineGG/database"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"github.com/bs2603/TargetingEngineGG/cache"
+	"github.com/bs2603/TargetingEngineGG/database"
 
 	"github.com/prometheus/client_golang/prometheus"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"

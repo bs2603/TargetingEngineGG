@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"TargetingEngineGG/campaign"
-	"TargetingEngineGG/targeting"
+	"github.com/bs2603/TargetingEngineGG/campaign"
+	"github.com/bs2603/TargetingEngineGG/targeting"
 )
 
 func RefreshCampaigns(db *sql.DB) {
